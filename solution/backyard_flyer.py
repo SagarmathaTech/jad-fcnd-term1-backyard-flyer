@@ -78,9 +78,15 @@ class BackyardFlyer(Drone):
         TODO: Implement this method
 
         This triggers when `MsgID.LOCAL_VELOCITY` is received and self.local_velocity contains new data
+
+        NOTE: We need to determine when it is appropriate to disarm the drone so as not to have it
+              crash to the ground. Removed the transition from the state_callback function and
+              add this logic to determine when we are close enough to the ground to release control.
         """
-        #print("Velocity changed")
-        pass
+        if self.flight_state == States.LANDING:
+            if ((self.global_position[2] - self.global_home[2] < self.distance_threshold) and
+                    abs(self.local_position[2]) < self.distance_threshold):
+                self.disarming_transition()
 
     def state_callback(self):
         """
@@ -94,8 +100,6 @@ class BackyardFlyer(Drone):
             self.arming_transition()
         elif self.flight_state == States.ARMING:
             self.takeoff_transition()
-        elif self.flight_state == States.LANDING:
-            self.disarming_transition()
         elif self.flight_state == States.DISARMING:
             self.manual_transition()
 
@@ -225,6 +229,7 @@ class BackyardFlyer(Drone):
         2. Transition to the DISARMING state
         """
         print("disarm transition")
+        print("Local Position: {}".format(self.local_position))
 
         self.disarm()
         self.flight_state = States.DISARMING
